@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Basic Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@300;400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a1628;
+      --card: #0f1e38;
+      --surface: #162544;
+      --border: rgba(255,255,255,0.08);
+      --ink: #f0f4ff;
+      --muted: #7888aa;
+      --accent: #38bdf8;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56,189,248,0.1), transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .wrapper { max-width: 460px; width: 100%; position: relative; z-index: 1; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+    }
+
+    .task-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(56,189,248,0.1);
+      border: 1px solid rgba(56,189,248,0.2);
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+
+    h1 em { font-style: normal; color: var(--accent); }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* Equation display */
+    .equation-display {
+      background: #060f1e;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      text-align: right;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .equation-preview {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      min-height: 20px;
+    }
+
+    .result-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1;
+      transition: color 0.3s;
+    }
+
+    .result-display.success { color: var(--green); }
+    .result-display.error   { color: var(--red);   }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .input-group { flex: 1; }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .input-group input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      -moz-appearance: textfield;
+    }
+
+    .input-group input::-webkit-inner-spin-button,
+    .input-group input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+    }
+
+    .input-group input::placeholder { color: rgba(255,255,255,0.15); font-size: 18px; }
+
+    .operator {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+      padding-top: 24px;
+      flex-shrink: 0;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    #calcBtn {
+      flex: 2;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0a1628;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 6px 20px rgba(56,189,248,0.25);
+    }
+
+    #calcBtn:hover { background: #7dd3fc; box-shadow: 0 8px 28px rgba(56,189,248,0.4); }
+    #calcBtn:active { transform: scale(0.98); }
+
+    #clearBtn {
+      flex: 1;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    #clearBtn:hover { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
+
+    /* History */
+    .history-section { margin-top: 28px; }
+
+    .history-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--muted);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-item .h-result { color: var(--green); font-weight: 700; }
+
+    .empty-history {
+      font-size: 13px;
+      color: rgba(255,255,255,0.15);
+      text-align: center;
+      padding: 16px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.1);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <div class="card">
+      <span class="task-tag">Task 2c &mdash; JavaScript</span>
+      <h1>Basic <em>Calculator</em></h1>
+      <p class="subtitle">Enter two numbers and click Add to calculate their sum.</p>
+
+      <!-- Result display -->
+      <div class="equation-display">
+        <div class="equation-preview" id="eqPreview">&nbsp;</div>
+        <div class="result-display" id="resultDisplay">0</div>
+      </div>
+
+      <!-- Inputs -->
+      <div class="input-row">
+        <div class="input-group">
+          <label>Number 1</label>
+          <input type="number" id="num1" placeholder="0" oninput="updatePreview()"/>
+        </div>
+        <span class="operator">+</span>
+        <div class="input-group">
+          <label>Number 2</label>
+          <input type="number" id="num2" placeholder="0" oninput="updatePreview()"/>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="calcBtn" onclick="calculate()">= &nbsp;Calculate Sum</button>
+        <button id="clearBtn" onclick="clearAll()">✕ Clear</button>
+      </div>
+
+      <!-- History -->
+      <div class="history-section">
+        <p class="history-title">Calculation History</p>
+        <div class="history-list" id="historyList">
+          <p class="empty-history">No calculations yet...</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>Cognifyz Internship &mdash; Level 1, Task 2c</footer>
+  </div>
+
+  <script>
+    let history = [];
+
+    function updatePreview() {
+      const a = document.getElementById('num1').value;
+      const b = document.getElementById('num2').value;
+      const preview = document.getElementById('eqPreview');
+      if (a !== '' && b !== '') {
+        preview.textContent = `${a} + ${b} =`;
+      } else {
+        preview.innerHTML = '&nbsp;';
+      }
+    }
+
+    function calculate() {
+      const a = document.getElementById('num1').value;
+      const b = document.getElementById('num2').value;
+      const resultEl = document.getElementById('resultDisplay');
+
+      if (a === '' || b === '') {
+        resultEl.textContent = 'Enter both numbers!';
+        resultEl.className = 'result-display error';
+        return;
+      }
+
+      const numA = parseFloat(a);
+      const numB = parseFloat(b);
+      const sum  = numA + numB;
+
+      // Display result
+      resultEl.textContent = sum % 1 === 0 ? sum : sum.toFixed(4);
+      resultEl.className = 'result-display success';
+
+      // Update preview
+      document.getElementById('eqPreview').textContent = `${numA} + ${numB} =`;
+
+      // Add to history
+      addToHistory(numA, numB, sum);
+    }
+
+    function addToHistory(a, b, result) {
+      history.unshift({ a, b, result });
+      if (history.length > 5) history.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (history.length === 0) {
+        list.innerHTML = '<p class="empty-history">No calculations yet...</p>';
+        return;
+      }
+      list.innerHTML = history.map(h => `
+        <div class="history-item">
+          <span>${h.a} + ${h.b}</span>
+          <span class="h-result">= ${h.result % 1 === 0 ? h.result : h.result.toFixed(4)}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearAll() {
+      document.getElementById('num1').value = '';
+      document.getElementById('num2').value = '';
+      document.getElementById('resultDisplay').textContent = '0';
+      document.getElementById('resultDisplay').className = 'result-display';
+      document.getElementById('eqPreview').innerHTML = '&nbsp;';
+    }
+
+    // Allow Enter key to calculate
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') calculate();
+    });
+  </script>
+</body>
+</html>
